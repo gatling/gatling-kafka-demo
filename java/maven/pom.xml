@@ -10,9 +10,10 @@
     <properties>
         <maven.compiler.release>11</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <gatling.version>3.16.0</gatling.version>
-        <gatling-kafka.version>3.16.1.FL-M1</gatling-kafka.version>
-        <gatling-enterprise.version>3.16.0.FL</gatling-enterprise.version>
+        <gatling.version>3.16.1-M2</gatling.version>
+        <!-- the HTML reports' charts: there is no milestone of them, the latest release works with this milestone -->
+        <gatling-highcharts.version>3.16.0</gatling-highcharts.version>
+        <gatling-kafka.version>3.16.1-M2</gatling-kafka.version>
         <gatling-maven-plugin.version>4.21.12</gatling-maven-plugin.version>
         <maven-compiler-plugin.version>3.16.0</maven-compiler-plugin.version>
         <maven-jar-plugin.version>3.5.1</maven-jar-plugin.version>
@@ -23,6 +24,13 @@
         <dependency>
             <groupId>io.gatling.highcharts</groupId>
             <artifactId>gatling-charts-highcharts</artifactId>
+            <version>${gatling-highcharts.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- Gatling itself at the milestone the plugin is built against, rather than the release the charts depend on -->
+        <dependency>
+            <groupId>io.gatling</groupId>
+            <artifactId>gatling-app</artifactId>
             <version>${gatling.version}</version>
             <scope>test</scope>
         </dependency>
@@ -32,32 +40,14 @@
             <version>${gatling-kafka.version}</version>
             <scope>test</scope>
         </dependency>
-        <!-- this build of the plugin is the Gatling Enterprise one: it runs on the Gatling Enterprise build of Gatling's core -->
-        <dependency>
-            <groupId>io.gatling</groupId>
-            <artifactId>gatling-core</artifactId>
-            <version>${gatling-enterprise.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.gatling</groupId>
-            <artifactId>gatling-core-java</artifactId>
-            <version>${gatling-enterprise.version}</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
-    <!-- Gatling's private repositories, for the plugin (milestones) and the Gatling Enterprise core it depends on (releases):
-         the credentials are the servers with these ids in ~/.m2/settings.xml -->
+    <!-- Gatling's private repository of public milestones: the plugin and the Gatling version it is built against are milestones, which
+         are not on Maven Central. The credentials are the server with this id in ~/.m2/settings.xml -->
     <repositories>
         <repository>
-            <id>gatlingcorp-milestones</id>
-            <url>https://gatlingcorp-049894548288.d.codeartifact.us-east-1.amazonaws.com/maven/milestones</url>
-            <snapshots><enabled>false</enabled></snapshots>
-        </repository>
-        <repository>
-            <id>gatlingcorp-releases</id>
-            <url>https://gatlingcorp-049894548288.d.codeartifact.us-east-1.amazonaws.com/maven/releases</url>
+            <id>gatlingcorp-staging</id>
+            <url>https://gatlingcorp-049894548288.d.codeartifact.us-east-1.amazonaws.com/maven/staging</url>
             <snapshots><enabled>false</enabled></snapshots>
         </repository>
     </repositories>

@@ -1,7 +1,7 @@
 # The order service the simulations load: a Redpanda Connect pipeline (https://docs.redpanda.com/redpanda-connect/).
 # It reads each order from the orders topic, then writes:
 # - a confirmation on order-confirmations, the reply the simulations' requestReply waits for;
-# - an event on order-events, the downstream record the simulations' expect waits for.
+# - an event on order-events, the downstream record the simulations subscribe to.
 # Both keep the order's record key, which the simulations match the records with, and its channel header.
 
 input:

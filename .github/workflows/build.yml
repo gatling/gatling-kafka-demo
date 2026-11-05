@@ -35,7 +35,7 @@ jobs:
           role-to-assume: ${{ vars.GATLING_BOT_GITHUB_CI }}
           aws-region: us-east-1
 
-      # the plugin is resolved from Gatling's private repositories: Maven and Gradle read this token
+      # the plugin and Gatling are milestones, resolved from Gatling's private repository of public milestones: Maven and Gradle read this token
       - name: Get a CodeArtifact token
         run: |
           CODEARTIFACT_AUTH_TOKEN=$(aws codeartifact get-authorization-token \
@@ -51,12 +51,7 @@ jobs:
           <settings>
             <servers>
               <server>
-                <id>gatlingcorp-milestones</id>
-                <username>aws</username>
-                <password>${env.CODEARTIFACT_AUTH_TOKEN}</password>
-              </server>
-              <server>
-                <id>gatlingcorp-releases</id>
+                <id>gatlingcorp-staging</id>
                 <username>aws</username>
                 <password>${env.CODEARTIFACT_AUTH_TOKEN}</password>
               </server>

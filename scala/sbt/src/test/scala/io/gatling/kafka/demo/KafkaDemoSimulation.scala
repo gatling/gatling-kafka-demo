@@ -17,7 +17,7 @@ class KafkaDemoSimulation extends Simulation {
     // Kafka 4 producers wait up to 5 ms (linger.ms) to batch records, which adds up to 5 ms to every send:
     // send each record right away instead, as this test measures latency, not throughput
     .producerProperty("linger.ms", "0")
-    // a reply, or an expected record, is the one with the same key as the order
+    // a reply, or a subscribed record, is the one with the same key as the order
     .matchByKey
     .replyTimeout(10.seconds)
 
@@ -39,22 +39,24 @@ class KafkaDemoSimulation extends Simulation {
     """{"orderId": "#{orderId}", "productId": "#{productId}", "quantity": #{quantity}, "unitPriceCents": #{unitPriceCents}}"""
   )
 
-  // fire and forget: the order is sent, timed until the broker acknowledges it,
-  // then the event the order service publishes downstream is expected
+  // fire and forget: the order is sent, timed until the broker acknowledges it.
+  // Right before sending, it subscribes to the event the order service publishes downstream on order-events,
+  // without blocking: the virtual user goes on, and polls the subscription later
   private val placeOrder = feed(orders)
-    .exec(session => session.set("sentAt", System.currentTimeMillis()))
     .exec(
       kafka("Place order")
         .send("orders")
         .value(order)
         .key("#{orderId}")
-        .header("channel", "web"),
-      kafka("Order shipped")
-        .expect("order-events")
-        .correlationId("#{orderId}")
-        // timed from the send until the event is read: the latency of the whole pipeline
-        .startTimestampFrom("sentAt")
-        .check(jsonPath("$.type").is("ORDER_SHIPPED"))
+        .header("channel", "web")
+        .subscribe(
+          // timed from when the subscription starts, right before the send, until the event is read:
+          // the latency of the whole pipeline
+          kafka("Order shipped")
+            .subscribe("order-events")
+            .correlationId("#{orderId}")
+            .check(jsonPath("$.type").is("ORDER_SHIPPED"))
+        )
     )
 
   // request-reply: the order is sent, timed until its confirmation is read
@@ -78,6 +80,9 @@ class KafkaDemoSimulation extends Simulation {
       exec(placeOrder)
         .pause(1.second)
         .exec(placeOrderAndWaitForConfirmation)
+        // waits for the order shipped event subscribed to above, if it is not in yet,
+        // and applies its check's failure to the virtual user
+        .exec(kafka.poll)
         .pause(1.second)
     )
 

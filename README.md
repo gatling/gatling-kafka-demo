@@ -24,19 +24,27 @@ confirmation on `order-confirmations` and an event on `order-events`, both with 
 
 Each virtual user places orders for a minute, as JSON records with the order id as their key and a `channel` header:
 
-- fire and forget: it sends an order (`send`), timed until the broker acknowledges it, then waits for the order
-  service's event on `order-events` (`expect`), timed from the send: the latency of the whole pipeline;
+- fire and forget, with a subscription: right before sending an order (`send`), timed until the broker acknowledges
+  it, it subscribes to the order service's event on `order-events` (`subscribe`), without waiting for it. The
+  subscription is timed from when it starts until the event is read: the latency of the whole pipeline;
 - request-reply: it sends an order and waits for its confirmation on `order-confirmations`, matched by key
-  (`requestReply`), then checks it.
+  (`requestReply`), then checks it;
+- then it polls its subscriptions (`kafka.poll`, `kafka.poll()` in Java and Kotlin): it waits for the shipped event of the first order if it is not in
+  yet, and the event's check failure, if any, applies to the virtual user.
 
-This version of the plugin, `3.16.1.FL-M1`, is a Gatling Enterprise milestone: it is resolved from Gatling's private
-repositories, and runs on the Gatling Enterprise build of Gatling's core (`3.16.0.FL`), which each project selects
-explicitly. Maven reads the repositories' credentials from `~/.m2/settings.xml`, sbt from a global sbt file in
+A subscription is the pattern to copy for a Kafka-to-Kafka pipeline: the virtual user goes on while the record it
+subscribed to travels through the system. `consume` is the blocking alternative, which waits for the record where it
+is placed.
+
+This version of the plugin, `3.16.1-M2`, is a milestone built against Gatling `3.16.1-M2`, which is a milestone too:
+neither is on Maven Central, and both are resolved from Gatling's private repository of public milestones (`staging`).
+The HTML reports' charts (`gatling-charts-highcharts`) have no milestone, so the projects keep their latest release,
+`3.16.0`. Maven reads the repository's credentials from `~/.m2/settings.xml`, sbt from a global sbt file in
 `~/.config/sbt/2/`, and Gradle from the `CODEARTIFACT_AUTH_TOKEN` environment variable:
 
 ```console
 export CODEARTIFACT_AUTH_TOKEN=$(aws codeartifact get-authorization-token --domain gatlingcorp --domain-owner 049894548288 --region us-east-1 --query authorizationToken --output text)
 ```
 
-Check each project for their usage details, and the [Gatling Kafka documentation](https://docs.gatling.io/reference/script/kafka/)
-(it may not be published yet).
+Check each project for their usage details, and the [Gatling Kafka documentation](https://docs.gatling.io/reference/script/kafka/),
+which is not published yet for this milestone.

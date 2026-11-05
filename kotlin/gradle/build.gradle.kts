@@ -19,25 +19,22 @@ kotlin {
 
 repositories {
   mavenCentral()
-  // Gatling's private repositories, for the plugin (milestones) and the Gatling Enterprise core it depends on (releases):
-  // export CODEARTIFACT_AUTH_TOKEN first, see the README
-  listOf("milestones", "releases").forEach { repository ->
-    maven {
-      url = uri("https://gatlingcorp-049894548288.d.codeartifact.us-east-1.amazonaws.com/maven/$repository")
-      credentials {
-        username = "aws"
-        password = providers.environmentVariable("CODEARTIFACT_AUTH_TOKEN").orNull
-      }
+  // Gatling's private repository of public milestones: the plugin and the Gatling version it is built against are milestones,
+  // which are not on Maven Central. Export CODEARTIFACT_AUTH_TOKEN first, see the README
+  maven {
+    url = uri("https://gatlingcorp-049894548288.d.codeartifact.us-east-1.amazonaws.com/maven/staging")
+    credentials {
+      username = "aws"
+      password = providers.environmentVariable("CODEARTIFACT_AUTH_TOKEN").orNull
     }
   }
 }
 
 dependencies {
-  gatlingImplementation("io.gatling:gatling-kafka-java:3.16.1.FL-M1")
-  // this build of the plugin is the Gatling Enterprise one: it runs on the Gatling Enterprise build of Gatling's core
-  // (strictly, as Gradle would otherwise pick 3.16.0, which it ranks above 3.16.0.FL)
-  gatlingImplementation("io.gatling:gatling-core:3.16.0.FL!!")
-  gatlingImplementation("io.gatling:gatling-core-java:3.16.0.FL!!")
+  gatlingImplementation("io.gatling:gatling-kafka-java:3.16.1-M2")
+  // Gatling itself at the milestone the plugin is built against. The Gradle plugin adds the HTML reports' charts at its own
+  // version, 3.16.0: there is no milestone of them, and that release works with this milestone
+  gatlingImplementation("io.gatling:gatling-app:3.16.1-M2")
 }
 
 gatling {
