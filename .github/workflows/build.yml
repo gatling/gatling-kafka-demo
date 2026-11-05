@@ -1,0 +1,101 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  id-token: write
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      JAVA_OPTS: "-Xmx4G"
+      SBT_OPTS: "-Dsbt.ci=true"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Configure AWS Credentials (for CodeArtifact)
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ vars.GATLING_BOT_GITHUB_CI }}
+          aws-region: us-east-1
+
+      # the plugin is resolved from Gatling's private repositories: Maven and Gradle read this token
+      - name: Get a CodeArtifact token
+        run: |
+          CODEARTIFACT_AUTH_TOKEN=$(aws codeartifact get-authorization-token \
+            --domain gatlingcorp --domain-owner 049894548288 \
+            --query authorizationToken --output text)
+          echo "::add-mask::$CODEARTIFACT_AUTH_TOKEN"
+          echo "CODEARTIFACT_AUTH_TOKEN=$CODEARTIFACT_AUTH_TOKEN" >> "$GITHUB_ENV"
+
+      - name: Prepare Maven environment
+        run: |
+          mkdir --parents ~/.m2
+          cat > ~/.m2/settings.xml <<'SETTINGS'
+          <settings>
+            <servers>
+              <server>
+                <id>gatlingcorp-milestones</id>
+                <username>aws</username>
+                <password>${env.CODEARTIFACT_AUTH_TOKEN}</password>
+              </server>
+              <server>
+                <id>gatlingcorp-releases</id>
+                <username>aws</username>
+                <password>${env.CODEARTIFACT_AUTH_TOKEN}</password>
+              </server>
+            </servers>
+          </settings>
+          SETTINGS
+
+      - name: Prepare SBT environment
+        env:
+          PRIVATE_REPOSITORY_SBT: ${{ vars.PRIVATE_REPOSITORY_SBT_2 }}
+        run: |
+          mkdir --parents ~/.config/sbt/2 || true
+          echo "$PRIVATE_REPOSITORY_SBT" > ~/.config/sbt/2/privateRepository.sbt
+
+      - name: Set up JDK
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+
+      - name: Set up sbt
+        uses: sbt/setup-sbt@ecad189dd245444b9ae0a0cd5922fd938b88906f # v1.5.12
+
+      - name: Build Java Maven
+        working-directory: java/maven
+        run: ./mvnw --batch-mode -Dstyle.color=always --no-transfer-progress test-compile
+
+      - name: Build Java Gradle
+        working-directory: java/gradle
+        run: ./gradlew gatlingClasses
+
+      - name: Build Kotlin Maven
+        working-directory: kotlin/maven
+        run: ./mvnw --batch-mode -Dstyle.color=always --no-transfer-progress test-compile
+
+      - name: Build Kotlin Gradle
+        working-directory: kotlin/gradle
+        run: ./gradlew gatlingClasses
+
+      - name: Build Scala sbt
+        working-directory: scala/sbt
+        run: sbt Test/compile

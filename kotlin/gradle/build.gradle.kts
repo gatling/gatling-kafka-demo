@@ -1,0 +1,52 @@
+plugins {
+  idea
+  kotlin("jvm")               version "2.4.20"
+  kotlin("plugin.allopen")    version "2.4.20"
+
+  id("com.diffplug.spotless") version "8.10.3"
+  id("io.gatling.gradle")     version "3.16.0"
+}
+
+tasks.withType(JavaCompile::class) {
+  options.release.set(21)
+}
+
+kotlin {
+  compilerOptions {
+    jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
+  }
+}
+
+repositories {
+  mavenCentral()
+  // Gatling's private repositories, for the plugin (milestones) and the Gatling Enterprise core it depends on (releases):
+  // export CODEARTIFACT_AUTH_TOKEN first, see the README
+  listOf("milestones", "releases").forEach { repository ->
+    maven {
+      url = uri("https://gatlingcorp-049894548288.d.codeartifact.us-east-1.amazonaws.com/maven/$repository")
+      credentials {
+        username = "aws"
+        password = providers.environmentVariable("CODEARTIFACT_AUTH_TOKEN").orNull
+      }
+    }
+  }
+}
+
+dependencies {
+  gatlingImplementation("io.gatling:gatling-kafka-java:3.16.1.FL-M1")
+  // this build of the plugin is the Gatling Enterprise one: it runs on the Gatling Enterprise build of Gatling's core
+  // (strictly, as Gradle would otherwise pick 3.16.0, which it ranks above 3.16.0.FL)
+  gatlingImplementation("io.gatling:gatling-core:3.16.0.FL!!")
+  gatlingImplementation("io.gatling:gatling-core-java:3.16.0.FL!!")
+}
+
+gatling {
+  // Enterprise Cloud (https://cloud.gatling.io/) configuration reference: https://docs.gatling.io/reference/integrations/build-tools/gradle-plugin/#running-your-simulations-on-gatling-enterprise-cloud
+}
+
+spotless {
+  kotlin {
+    ktfmt()
+      .googleStyle()
+  }
+}
