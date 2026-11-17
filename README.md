@@ -4,11 +4,11 @@ This demo project contains all combination of currently supported languages and 
 
 - [Java with Gradle](https://github.com/gatling/gatling-kafka-demo/tree/main/java/gradle)
 - [Java with Maven](https://github.com/gatling/gatling-kafka-demo/tree/main/java/maven)
+- [JavaScript](https://github.com/gatling/gatling-kafka-demo/tree/main/javascript)
 - [Kotlin with Gradle](https://github.com/gatling/gatling-kafka-demo/tree/main/kotlin/gradle)
 - [Kotlin with Maven](https://github.com/gatling/gatling-kafka-demo/tree/main/kotlin/maven)
 - [Scala with SBT](https://github.com/gatling/gatling-kafka-demo/tree/main/scala/sbt)
-
-JavaScript and TypeScript are not supported.
+- [TypeScript](https://github.com/gatling/gatling-kafka-demo/tree/main/typescript)
 
 The simulations run against a small order service, in a local Kafka broker started with Docker:
 
@@ -29,7 +29,7 @@ Each virtual user places orders for a minute, as JSON records with the order id 
   subscription is timed from when it starts until the event is read: the latency of the whole pipeline;
 - request-reply: it sends an order and waits for its confirmation on `order-confirmations`, matched by key
   (`requestReply`), then checks it;
-- then it polls its subscriptions (`kafka.poll`, `kafka.poll()` in Java and Kotlin): it waits for the shipped event of the first order if it is not in
+- then it polls its subscriptions (`kafka.poll`, `kafka.poll()` in Java, Kotlin, JavaScript and TypeScript): it waits for the shipped event of the first order if it is not in
   yet, and the event's check failure, if any, applies to the virtual user.
 
 A subscription is the pattern to copy for a Kafka-to-Kafka pipeline: the virtual user goes on while the record it
