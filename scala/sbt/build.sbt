@@ -1,5 +1,5 @@
 val gatlingVersion = "3.16.1"
-val gatlingKafkaVersion = "3.16.1.1"
+val gatlingKafkaVersion = "3.16.1.2"
 
 lazy val gatlingSbtPluginDemo = rootProject
   .enablePlugins(GatlingPlugin)

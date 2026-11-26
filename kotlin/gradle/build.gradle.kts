@@ -22,7 +22,7 @@ repositories {
 }
 
 dependencies {
-  gatlingImplementation("io.gatling:gatling-kafka-java:3.16.1.1")
+  gatlingImplementation("io.gatling:gatling-kafka-java:3.16.1.2")
 }
 
 gatling {
